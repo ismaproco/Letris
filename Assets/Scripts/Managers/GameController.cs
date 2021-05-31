@@ -148,7 +148,10 @@ public class GameController : MonoBehaviour
         PlayerInput();
     }
 
-    public void Restart() => Application.LoadLevel(Application.loadedLevel);
+    public void Restart()
+    {
+        Application.LoadLevel(Application.loadedLevel);
+    }
 
     void GameOver()
     {
