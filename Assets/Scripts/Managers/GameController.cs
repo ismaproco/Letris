@@ -10,7 +10,7 @@ public class GameController : MonoBehaviour
 
     Shape m_activeShape;
 
-    float m_dropInterval = 1f;
+    public float m_dropInterval = 1f;
     float m_timeToDrop;
 
 
@@ -67,6 +67,8 @@ public class GameController : MonoBehaviour
         m_timeToNextKeyLeftRight = Time.time;
         m_timeToNextKeyRotate = Time.time;
         m_timeToNextKeyDown = Time.time;
+
+        m_gameBoard.ClearAllRows();
     }
 
     void PlayerInput()
