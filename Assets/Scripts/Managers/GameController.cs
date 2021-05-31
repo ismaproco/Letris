@@ -31,6 +31,7 @@ public class GameController : MonoBehaviour
     bool m_gameOver = false;
 
     public GameObject m_gameOverPanel;
+    SoundManager m_soundManager;
 
     void Start()
     {
@@ -42,11 +43,13 @@ public class GameController : MonoBehaviour
 
         m_gameBoard = GameObject.FindWithTag("Board").GetComponent<Board>();
         m_spawner = GameObject.FindWithTag("Spawner").GetComponent<Spawner>();
+        m_soundManager = GameObject.FindObjectOfType<SoundManager>();
 
-        if (!m_gameBoard || !m_spawner)
+
+        if (!m_gameBoard || !m_spawner || !m_soundManager)
         {
             Debug.Log(
-                "ERROR board or spawner not present"
+                "ERROR board ,spawner, or soundManager not present"
             );
         }
 
@@ -66,6 +69,18 @@ public class GameController : MonoBehaviour
 
     }
 
+    void playSound(AudioClip clip, float volumeMultiplier = 1f)
+    {
+        if (m_soundManager.m_fxEnabled && clip)
+        {
+            AudioSource.PlayClipAtPoint(
+                clip,
+                Camera.main.transform.position,
+                Mathf.Clamp(m_soundManager.m_fxVolume * volumeMultiplier, 0.05f, 1f));
+        }
+    }
+
+
     void LandShape()
     {
         m_activeShape.MoveUp();
@@ -77,6 +92,7 @@ public class GameController : MonoBehaviour
         m_timeToNextKeyDown = Time.time;
 
         m_gameBoard.ClearAllRows();
+        playSound(m_soundManager.m_dropSound);
     }
 
     void PlayerInput()
@@ -90,6 +106,11 @@ public class GameController : MonoBehaviour
             if (!m_gameBoard.IsValidPosition(m_activeShape))
             {
                 m_activeShape.MoveLeft();
+                playSound(m_soundManager.m_errorSound);
+            }
+            else
+            {
+                playSound(m_soundManager.m_moveSound, 0.5f);
             }
         }
         else if (Input.GetButton("MoveLeft") && Time.time > m_timeToNextKeyLeftRight
@@ -101,6 +122,11 @@ public class GameController : MonoBehaviour
             if (!m_gameBoard.IsValidPosition(m_activeShape))
             {
                 m_activeShape.MoveRight();
+                playSound(m_soundManager.m_errorSound);
+            }
+            else
+            {
+                playSound(m_soundManager.m_moveSound, 0.5f);
             }
         }
         else if (Input.GetButtonDown("Rotate") && Time.time > m_timeToNextKeyRotate)
@@ -111,6 +137,11 @@ public class GameController : MonoBehaviour
             if (!m_gameBoard.IsValidPosition(m_activeShape))
             {
                 m_activeShape.RotateLeft();
+                playSound(m_soundManager.m_errorSound);
+            }
+            else
+            {
+                playSound(m_soundManager.m_moveSound, 0.5f);
             }
         }
         else if (Input.GetButton("MoveDown")
@@ -129,7 +160,6 @@ public class GameController : MonoBehaviour
                 }
                 else
                 {
-
                     LandShape();
                 }
             }
@@ -140,7 +170,7 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // no spawner or no gameboard no game
-        if (!m_gameBoard || !m_spawner || !m_activeShape || m_gameOver)
+        if (!m_gameBoard || !m_spawner || !m_activeShape || m_gameOver || !m_soundManager)
         {
             return;
         }
@@ -161,5 +191,6 @@ public class GameController : MonoBehaviour
         {
             m_gameOverPanel.SetActive(true);
         }
+        playSound(m_soundManager.m_gameOverSound);
     }
 }
