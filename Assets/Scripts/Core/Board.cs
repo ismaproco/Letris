@@ -29,6 +29,29 @@ public class Board : MonoBehaviour
 
     }
 
+    bool IsWithinBoard(int x, int y)
+    {
+        return (x >= 0 && x < m_width && y >= 0);
+    }
+
+    public bool IsValidPosition(Shape shape)
+    {
+        foreach (Transform child in shape.transform)
+        {
+            Vector2 pos = Vectorf.Round(child.position);
+            if (!IsWithinBoard((int)pos.x, (int)pos.y))
+            {
+                return false;
+            }
+
+            if (IsOccupied((int)pos.x, (int)pos.y, shape))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void DrawEmptyCells()
     {
         if (m_emptySprite != null)
@@ -50,5 +73,24 @@ public class Board : MonoBehaviour
             Debug.Log("Please assign a prefab to the board");
         }
 
+    }
+
+    bool IsOccupied(int x, int y, Shape shape)
+    {
+        return (m_grid[x, y] != null && m_grid[x, y].parent != shape.transform);
+    }
+
+    public void StoreShapeInGrid(Shape shape)
+    {
+        if (shape == null)
+        {
+            return;
+        }
+
+        foreach (Transform child in shape.transform)
+        {
+            Vector2 pos = Vectorf.Round(child.position);
+            m_grid[(int)pos.x, (int)pos.y] = child;
+        }
     }
 }
