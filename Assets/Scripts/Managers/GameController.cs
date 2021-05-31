@@ -17,17 +17,20 @@ public class GameController : MonoBehaviour
     float m_timeToNextKeyLeftRight;
 
     [Range(0.02f, 1f)]
-    public float m_keyRepeatRateLeftRight = 0.15f;
+    public float m_keyRepeatRateLeftRight = 0.1f;
 
-    [Range(0.02f, 1f)]
+    [Range(0.01f, 1f)]
     public float m_keyRepeatRateDown = 0.01f;
     float m_timeToNextKeyDown;
 
 
     [Range(0.02f, 1f)]
-    public float m_keyRepeatRateRotate = 0.25f;
+    public float m_keyRepeatRateRotate = 0.12f;
     float m_timeToNextKeyRotate;
 
+    bool m_gameOver = false;
+
+    public GameObject m_gameOverPanel;
 
     void Start()
     {
@@ -54,6 +57,11 @@ public class GameController : MonoBehaviour
             {
                 m_activeShape = m_spawner.SpawnShape();
             }
+        }
+
+        if (m_gameOverPanel)
+        {
+            m_gameOverPanel.SetActive(false);
         }
 
     }
@@ -115,7 +123,15 @@ public class GameController : MonoBehaviour
 
             if (!m_gameBoard.IsValidPosition(m_activeShape))
             {
-                LandShape();
+                if (m_gameBoard.IsOverLimit(m_activeShape))
+                {
+                    GameOver();
+                }
+                else
+                {
+
+                    LandShape();
+                }
             }
         }
     }
@@ -124,7 +140,7 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // no spawner or no gameboard no game
-        if (!m_gameBoard || !m_spawner || !m_activeShape)
+        if (!m_gameBoard || !m_spawner || !m_activeShape || m_gameOver)
         {
             return;
         }
@@ -132,5 +148,15 @@ public class GameController : MonoBehaviour
         PlayerInput();
     }
 
+    public void Restart() => Application.LoadLevel(Application.loadedLevel);
 
+    void GameOver()
+    {
+        m_activeShape.MoveUp();
+        m_gameOver = true;
+        if (m_gameOverPanel)
+        {
+            m_gameOverPanel.SetActive(true);
+        }
+    }
 }
