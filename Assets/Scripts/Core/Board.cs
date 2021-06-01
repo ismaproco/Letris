@@ -8,9 +8,8 @@ public class Board : MonoBehaviour
     public int m_height = 30;
     public int m_width = 10;
     public int m_header = 8;
-
     Transform[,] m_grid;
-
+    public int m_completedRows = 0;
 
     void Awake()
     {
@@ -142,10 +141,12 @@ public class Board : MonoBehaviour
 
     public void ClearAllRows()
     {
+        m_completedRows = 0;
         for (int y = 0; y < m_height; y++)
         {
             if (IsComplete(y))
             {
+                m_completedRows++;
                 ClearRow(y);
                 ShiftRowsDown(y + 1);
                 y--;

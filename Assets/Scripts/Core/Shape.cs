@@ -49,6 +49,17 @@ public class Shape : MonoBehaviour
         }
     }
 
+    public void RotateClockwise(bool clockwise)
+    {
+        if (clockwise)
+        {
+            RotateRight();
+        }
+        else
+        {
+            RotateLeft();
+        }
+    }
 
     // Start is called before the first frame update
     void Start()
