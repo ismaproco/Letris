@@ -8,6 +8,8 @@ public class GameController : MonoBehaviour
     Board m_gameBoard;
     Spawner m_spawner;
 
+    ScoreManager m_scoreManager;
+
     Shape m_activeShape;
 
     public float m_dropInterval = 1f;
@@ -38,6 +40,10 @@ public class GameController : MonoBehaviour
     public bool m_isPaused = false;
     public GameObject m_pausePanel;
 
+    float m_dropIntervalModded;
+
+    Ghost m_ghost;
+
     void Start()
     {
         //m_timeToNextKey = Time.time;
@@ -48,10 +54,12 @@ public class GameController : MonoBehaviour
 
         m_gameBoard = GameObject.FindWithTag("Board").GetComponent<Board>();
         m_spawner = GameObject.FindWithTag("Spawner").GetComponent<Spawner>();
+        m_scoreManager = GameObject.FindObjectOfType<ScoreManager>();
         m_soundManager = GameObject.FindObjectOfType<SoundManager>();
+        m_ghost = GameObject.FindObjectOfType<Ghost>();
 
 
-        if (!m_gameBoard || !m_spawner || !m_soundManager)
+        if (!m_gameBoard || !m_spawner || !m_soundManager || !m_scoreManager)
         {
             Debug.Log(
                 "ERROR board ,spawner, or soundManager not present"
@@ -78,6 +86,8 @@ public class GameController : MonoBehaviour
             m_pausePanel.SetActive(false);
         }
 
+        m_dropIntervalModded = m_dropInterval;
+
     }
 
     void playSound(AudioClip clip, float volumeMultiplier = 1f)
@@ -96,6 +106,12 @@ public class GameController : MonoBehaviour
     {
         m_activeShape.MoveUp();
         m_gameBoard.StoreShapeInGrid(m_activeShape);
+
+        if (m_ghost)
+        {
+            m_ghost.Reset();
+        }
+
         m_activeShape = m_spawner.SpawnShape();
 
         m_timeToNextKeyLeftRight = Time.time;
@@ -107,10 +123,23 @@ public class GameController : MonoBehaviour
 
         if (m_gameBoard.m_completedRows > 0)
         {
-            if (m_gameBoard.m_completedRows > 1)
+            m_scoreManager.ScoreLines(m_gameBoard.m_completedRows);
+
+            if (m_scoreManager.m_didLevelUp)
             {
-                AudioClip randomVocal = m_soundManager.GetRandomClip(m_soundManager.m_vocalClips);
-                playSound(randomVocal);
+                playSound(m_soundManager.m_levelUpVocalClip);
+                m_dropIntervalModded = m_dropInterval - Mathf.Clamp(
+                    (((float)m_scoreManager.m_level - 1) * 0.05f), 0.1f, 1f);
+            }
+            else
+            {
+
+                if (m_gameBoard.m_completedRows > 1)
+                {
+                    AudioClip randomVocal = m_soundManager.GetRandomClip(m_soundManager.m_vocalClips);
+                    playSound(randomVocal);
+                }
+
             }
             playSound(m_soundManager.m_clearRowSound);
         }
@@ -118,7 +147,7 @@ public class GameController : MonoBehaviour
 
     void PlayerInput()
     {
-        if (Input.GetButton("MoveRight") && Time.time > m_timeToNextKeyLeftRight
+        if ((Input.GetButton("MoveRight") && Time.time > m_timeToNextKeyLeftRight)
                     || Input.GetButtonDown("MoveRight"))
         {
             m_activeShape.MoveRight();
@@ -134,7 +163,7 @@ public class GameController : MonoBehaviour
                 playSound(m_soundManager.m_moveSound, 0.5f);
             }
         }
-        else if (Input.GetButton("MoveLeft") && Time.time > m_timeToNextKeyLeftRight
+        else if ((Input.GetButton("MoveLeft") && Time.time > m_timeToNextKeyLeftRight)
                   || Input.GetButtonDown("MoveLeft"))
         {
             m_activeShape.MoveLeft();
@@ -167,11 +196,11 @@ public class GameController : MonoBehaviour
                 playSound(m_soundManager.m_moveSound, 0.5f);
             }
         }
-        else if (Input.GetButton("MoveDown")
-            && Time.time > m_timeToNextKeyDown
+        else if ((Input.GetButton("MoveDown")
+            && Time.time > m_timeToNextKeyDown)
             || Time.time > m_timeToDrop)
         {
-            m_timeToDrop = Time.time + m_dropInterval;
+            m_timeToDrop = Time.time + m_dropIntervalModded;
             m_timeToNextKeyDown = Time.time + m_keyRepeatRateDown;
             m_activeShape.MoveDown();
 
@@ -201,7 +230,7 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // no spawner or no gameboard no game
-        if (!m_gameBoard || !m_spawner || !m_activeShape || m_gameOver || !m_soundManager)
+        if (!m_gameBoard || !m_spawner || !m_activeShape || m_gameOver || !m_soundManager || !m_scoreManager)
         {
             return;
         }
@@ -259,4 +288,14 @@ public class GameController : MonoBehaviour
             Time.timeScale = m_isPaused ? 0 : 1;
         }
     }
+
+    void LateUpdate()
+    {
+        if (m_ghost)
+        {
+            m_ghost.DrawGhost(m_activeShape, m_gameBoard);
+        }
+    }
+
+
 }
