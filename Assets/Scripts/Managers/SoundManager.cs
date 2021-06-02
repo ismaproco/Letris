@@ -30,6 +30,7 @@ public class SoundManager : MonoBehaviour
     public IconToggle m_musicIconToggle;
     public IconToggle m_fxIconToggle;
     public AudioClip m_levelUpVocalClip;
+    public AudioClip m_holdSound;
 
 
     public void PlayBackgroundMusic(AudioClip musicClip)

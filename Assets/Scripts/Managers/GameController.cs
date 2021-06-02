@@ -43,6 +43,7 @@ public class GameController : MonoBehaviour
     float m_dropIntervalModded;
 
     Ghost m_ghost;
+    Holder m_holder;
 
     void Start()
     {
@@ -57,7 +58,7 @@ public class GameController : MonoBehaviour
         m_scoreManager = GameObject.FindObjectOfType<ScoreManager>();
         m_soundManager = GameObject.FindObjectOfType<SoundManager>();
         m_ghost = GameObject.FindObjectOfType<Ghost>();
-
+        m_holder = GameObject.FindObjectOfType<Holder>();
 
         if (!m_gameBoard || !m_spawner || !m_soundManager || !m_scoreManager)
         {
@@ -110,6 +111,11 @@ public class GameController : MonoBehaviour
         if (m_ghost)
         {
             m_ghost.Reset();
+        }
+
+        if (m_holder)
+        {
+            m_holder.m_canRelease = true;
         }
 
         m_activeShape = m_spawner.SpawnShape();
@@ -224,6 +230,10 @@ public class GameController : MonoBehaviour
         {
             TogglePause();
         }
+        else if (Input.GetButtonDown("Hold"))
+        {
+            Hold();
+        }
     }
 
     // Update is called once per frame
@@ -286,6 +296,38 @@ public class GameController : MonoBehaviour
             }
 
             Time.timeScale = m_isPaused ? 0 : 1;
+        }
+    }
+
+    public void Hold()
+    {
+        if (!m_holder)
+        {
+            return;
+        }
+
+        if (!m_holder.m_heldShape)
+        {
+            m_holder.Catch(m_activeShape);
+            m_activeShape = m_spawner.SpawnShape();
+            playSound(m_soundManager.m_holdSound);
+        }
+        else if (m_holder.m_canRelease)
+        {
+            Shape shape = m_activeShape;
+            m_activeShape = m_holder.Release();
+            m_activeShape.transform.position = m_spawner.transform.position;
+            m_holder.Catch(shape);
+            playSound(m_soundManager.m_holdSound);
+        }
+        else
+        {
+            playSound(m_soundManager.m_errorSound);
+        }
+
+        if (m_ghost)
+        {
+            m_ghost.Reset();
         }
     }
 
