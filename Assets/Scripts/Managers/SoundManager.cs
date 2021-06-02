@@ -7,11 +7,11 @@ public class SoundManager : MonoBehaviour
     public bool m_musicEnabled = true;
     public bool m_fxEnabled = true;
 
-    [Range(0, 1)]
+    [Range(0, 1f)]
     public float m_musicVolume = 1.0f;
 
 
-    [Range(0, 1)]
+    [Range(0, 1f)]
     public float m_fxVolume = 1.0f;
 
     public AudioClip m_clearRowSound;
