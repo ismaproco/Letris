@@ -135,7 +135,7 @@ public class GameController : MonoBehaviour
             {
                 playSound(m_soundManager.m_levelUpVocalClip);
                 m_dropIntervalModded = m_dropInterval - Mathf.Clamp(
-                    (((float)m_scoreManager.m_level - 1) * 0.05f), 0.1f, 1f);
+                    (((float)m_scoreManager.m_level - 1) * 0.1f), 0.1f, 1f);
             }
             else
             {
