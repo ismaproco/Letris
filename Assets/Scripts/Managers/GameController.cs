@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
@@ -45,6 +46,38 @@ public class GameController : MonoBehaviour
     Ghost m_ghost;
     Holder m_holder;
 
+    public Text m_diagnosticText;
+
+    enum Direction { none, left, right, up, down }
+    Direction m_dragDirection = Direction.none;
+    Direction m_swipeDirection = Direction.none;
+
+
+    float m_timeToNextDrag;
+    float m_timeToNextSwipe;
+
+    [Range(0.05f, 1f)]
+    float m_minTimeToDrag = 0.15f;
+    [Range(0.05f, 1f)]
+    float m_minTimeToSwipe = 0.3f;
+
+    bool m_didTap = false;
+
+
+    void OnEnable()
+    {
+        TouchController.DragEvent += DragHandler;
+        TouchController.SwipeEvent += SwipeHandler;
+        TouchController.TapEvent += TapHandler;
+    }
+
+    void OnDisable()
+    {
+        TouchController.DragEvent -= DragHandler;
+        TouchController.SwipeEvent -= SwipeHandler;
+        TouchController.TapEvent -= TapHandler;
+    }
+
     void Start()
     {
         //m_timeToNextKey = Time.time;
@@ -65,6 +98,11 @@ public class GameController : MonoBehaviour
             Debug.Log(
                 "ERROR board ,spawner, or soundManager not present"
             );
+        }
+
+        if (m_diagnosticText)
+        {
+            m_diagnosticText.text = "";
         }
 
         if (m_spawner)
@@ -125,7 +163,7 @@ public class GameController : MonoBehaviour
         m_timeToNextKeyDown = Time.time;
 
         m_gameBoard.StartCoroutine("ClearAllRows");
-        
+
         playSound(m_soundManager.m_dropSound);
 
         if (m_gameBoard.m_completedRows > 0)
@@ -152,77 +190,129 @@ public class GameController : MonoBehaviour
         }
     }
 
+    void MoveRight()
+    {
+        m_activeShape.MoveRight();
+        m_timeToNextKeyLeftRight = Time.time + m_keyRepeatRateLeftRight;
+
+        if (!m_gameBoard.IsValidPosition(m_activeShape))
+        {
+            m_activeShape.MoveLeft();
+            playSound(m_soundManager.m_errorSound);
+        }
+        else
+        {
+            playSound(m_soundManager.m_moveSound, 0.5f);
+        }
+    }
+
+    void MoveLeft()
+    {
+        m_activeShape.MoveLeft();
+        m_timeToNextKeyLeftRight = Time.time + m_keyRepeatRateLeftRight;
+
+        if (!m_gameBoard.IsValidPosition(m_activeShape))
+        {
+            m_activeShape.MoveRight();
+            playSound(m_soundManager.m_errorSound);
+        }
+        else
+        {
+            playSound(m_soundManager.m_moveSound, 0.5f);
+        }
+    }
+
+    void MoveDown()
+    {
+        m_timeToDrop = Time.time + m_dropIntervalModded;
+        m_timeToNextKeyDown = Time.time + m_keyRepeatRateDown;
+        m_activeShape.MoveDown();
+
+        if (!m_gameBoard.IsValidPosition(m_activeShape))
+        {
+            if (m_gameBoard.IsOverLimit(m_activeShape))
+            {
+                GameOver();
+            }
+            else
+            {
+                LandShape();
+            }
+        }
+    }
+
+    void Rotate()
+    {
+        // m_activeShape.RotateRight();
+        m_activeShape.RotateClockwise(m_clockwise);
+        m_timeToNextKeyRotate = Time.time + m_keyRepeatRateRotate;
+
+        if (!m_gameBoard.IsValidPosition(m_activeShape))
+        {
+            // m_activeShape.RotateLeft();
+            m_activeShape.RotateClockwise(!m_clockwise);
+            playSound(m_soundManager.m_errorSound);
+        }
+        else
+        {
+            playSound(m_soundManager.m_moveSound, 0.5f);
+        }
+    }
+
+
     void PlayerInput()
     {
         if ((Input.GetButton("MoveRight") && Time.time > m_timeToNextKeyLeftRight)
                     || Input.GetButtonDown("MoveRight"))
         {
-            m_activeShape.MoveRight();
-            m_timeToNextKeyLeftRight = Time.time + m_keyRepeatRateLeftRight;
-
-            if (!m_gameBoard.IsValidPosition(m_activeShape))
-            {
-                m_activeShape.MoveLeft();
-                playSound(m_soundManager.m_errorSound);
-            }
-            else
-            {
-                playSound(m_soundManager.m_moveSound, 0.5f);
-            }
+            MoveRight();
         }
         else if ((Input.GetButton("MoveLeft") && Time.time > m_timeToNextKeyLeftRight)
                   || Input.GetButtonDown("MoveLeft"))
         {
-            m_activeShape.MoveLeft();
-            m_timeToNextKeyLeftRight = Time.time + m_keyRepeatRateLeftRight;
-
-            if (!m_gameBoard.IsValidPosition(m_activeShape))
-            {
-                m_activeShape.MoveRight();
-                playSound(m_soundManager.m_errorSound);
-            }
-            else
-            {
-                playSound(m_soundManager.m_moveSound, 0.5f);
-            }
+            MoveLeft();
         }
         else if (Input.GetButtonDown("Rotate") && Time.time > m_timeToNextKeyRotate)
         {
-            // m_activeShape.RotateRight();
-            m_activeShape.RotateClockwise(m_clockwise);
-            m_timeToNextKeyRotate = Time.time + m_keyRepeatRateRotate;
-
-            if (!m_gameBoard.IsValidPosition(m_activeShape))
-            {
-                // m_activeShape.RotateLeft();
-                m_activeShape.RotateClockwise(!m_clockwise);
-                playSound(m_soundManager.m_errorSound);
-            }
-            else
-            {
-                playSound(m_soundManager.m_moveSound, 0.5f);
-            }
+            Rotate();
         }
         else if ((Input.GetButton("MoveDown")
             && Time.time > m_timeToNextKeyDown)
             || Time.time > m_timeToDrop)
         {
-            m_timeToDrop = Time.time + m_dropIntervalModded;
-            m_timeToNextKeyDown = Time.time + m_keyRepeatRateDown;
-            m_activeShape.MoveDown();
-
-            if (!m_gameBoard.IsValidPosition(m_activeShape))
-            {
-                if (m_gameBoard.IsOverLimit(m_activeShape))
-                {
-                    GameOver();
-                }
-                else
-                {
-                    LandShape();
-                }
-            }
+            MoveDown();
         }
+
+        #region Touch controllers
+        else if ((m_swipeDirection == Direction.right && Time.time > m_timeToNextSwipe)
+                || (m_dragDirection == Direction.right && Time.time > m_timeToNextDrag))
+        {
+            MoveRight();
+            m_timeToNextDrag = Time.time + m_minTimeToDrag;
+            m_timeToNextSwipe = Time.time + m_minTimeToSwipe;
+        }
+
+        else if ((m_swipeDirection == Direction.left && Time.time > m_timeToNextSwipe)
+                || (m_dragDirection == Direction.left && Time.time > m_timeToNextDrag))
+        {
+            MoveLeft();
+            m_timeToNextDrag = Time.time + m_minTimeToDrag;
+            m_timeToNextSwipe = Time.time + m_minTimeToSwipe;
+        }
+
+        else if ((m_dragDirection == Direction.up && Time.time > m_timeToNextSwipe)
+                || m_didTap)
+        {
+            Rotate();
+            m_timeToNextSwipe = Time.time + m_minTimeToSwipe;
+        }
+
+        else if ((m_dragDirection == Direction.down && Time.time > m_timeToNextDrag))
+        {
+            MoveDown();
+        }
+        #endregion
+
         else if (Input.GetButtonDown("ToggleRotate"))
         {
             ToggleRotateDirection();
@@ -235,6 +325,9 @@ public class GameController : MonoBehaviour
         {
             Hold();
         }
+        m_dragDirection = Direction.none;
+        m_swipeDirection = Direction.none;
+        m_didTap = false;
     }
 
     // Update is called once per frame
@@ -338,6 +431,45 @@ public class GameController : MonoBehaviour
         {
             m_ghost.DrawGhost(m_activeShape, m_gameBoard);
         }
+    }
+
+    void DragHandler(Vector2 swipeMovement)
+    {
+        // if (m_diagnosticText)
+        // {
+        //     m_diagnosticText.text = "Swipe Detected";
+        // }
+        m_dragDirection = GetDirection(swipeMovement);
+    }
+
+    void SwipeHandler(Vector2 swipeMovement)
+    {
+        // if (m_diagnosticText)
+        // {
+        //     m_diagnosticText.text = "";
+        // }
+        m_swipeDirection = GetDirection(swipeMovement);
+
+    }
+
+    void TapHandler(Vector2 tapMovement)
+    {
+        m_didTap = true;
+    }
+
+    Direction GetDirection(Vector2 swipeMovement)
+    {
+        Direction swipeDir = Direction.none;
+        if (Mathf.Abs(swipeMovement.x) > Mathf.Abs(swipeMovement.y))
+        {
+            swipeDir = (swipeMovement.x >= 0) ? Direction.right : Direction.left;
+        }
+        else
+        {
+            swipeDir = (swipeMovement.y >= 0) ? Direction.up : Direction.down;
+        }
+
+        return swipeDir;
     }
 
 
